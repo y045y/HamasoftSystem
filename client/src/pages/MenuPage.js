@@ -15,6 +15,9 @@ const MenuPage = () => {
                 <Link to="/settings" className="list-group-item list-group-item-action">
                     設定
                 </Link>
+                <Link to="/cash-management" className="list-group-item list-group-item-action">
+                    金庫管理
+                </Link>  {/* ✅ ここに金庫管理を追加 */}
             </div>
         </div>
     );
