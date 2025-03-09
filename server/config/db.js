@@ -1,14 +1,15 @@
-// config/db.js
 require("dotenv").config();
 const { Sequelize } = require("sequelize");
 
-// Sequelize インスタンスの作成
+// ホスト名とインスタンス名を分離
+const [host, instanceName] = process.env.DB_SERVER.split("\\");
+
 const sequelize = new Sequelize(process.env.DB_DATABASE, process.env.DB_USER, process.env.DB_PASSWORD, {
-    host: process.env.DB_SERVER,
+    host: host,  // ホスト名のみ指定
     dialect: "mssql",
     port: parseInt(process.env.DB_PORT, 10) || 1433,
     dialectOptions: {
-        instanceName: "SQLEXPRESS01",
+        instanceName: instanceName,  // インスタンス名を指定
         options: {
             encrypt: true,
             trustServerCertificate: true,
@@ -17,7 +18,11 @@ const sequelize = new Sequelize(process.env.DB_DATABASE, process.env.DB_USER, pr
     logging: console.log,
 });
 
-// 接続確認用の関数
+// 接続確認
+sequelize.authenticate()
+    .then(() => console.log("✅ 接続成功"))
+    .catch(err => console.error("❌ 接続失敗:", err));
+
 const connectDB = async () => {
     try {
         await sequelize.authenticate();
@@ -28,8 +33,7 @@ const connectDB = async () => {
     }
 };
 
-// ⭐️ 正しくエクスポートされているか確認
 module.exports = {
-    sequelize,   // これで `sequelize` をエクスポート
-    connectDB,   // これで `connectDB` をエクスポート
+    sequelize,
+    connectDB,
 };
