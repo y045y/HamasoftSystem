@@ -3,16 +3,11 @@ import { getCurrentInventory } from "../services/api";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../styles/cashStateTable.css";
 
-// ✅ 環境変数からAPIのベースURLを取得
 
-const API_URL = `${process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api"}`;
-console.log("API URL:", API_URL);
-console.log("環境変数:", process.env.REACT_APP_API_BASE_URL);
 
-// ✅ const API_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";金種の単価
-const denominationValues = {
+const denominationValues = { 
     TenThousandYen: 10000,
-    FiveThousandYen: 5000,
+    FiveThousandYen: 5000, 
     OneThousandYen: 1000,
     FiveHundredYen: 500,
     OneHundredYen: 100,
@@ -21,6 +16,7 @@ const denominationValues = {
     FiveYen: 5,
     OneYen: 1,
 };
+
 
 // ✅ 金種のラベル
 const denominationLabels = {
@@ -40,32 +36,43 @@ const CashStateTable = ({ inputCounts, setInputCounts, setDifference }) => {
     const [error, setError] = useState(null);
 
     // ✅ 金種データのキーを統一するためのマッピング関数
-    const mapCashStateKeys = (data) => ({
-        TenThousandYen: data.TotalTenThousandYen || 0,
-        FiveThousandYen: data.TotalFiveThousandYen || 0,
-        OneThousandYen: data.TotalOneThousandYen || 0,
-        FiveHundredYen: data.TotalFiveHundredYen || 0,
-        OneHundredYen: data.TotalOneHundredYen || 0,
-        FiftyYen: data.TotalFiftyYen || 0,
-        TenYen: data.TotalTenYen || 0,
-        FiveYen: data.TotalFiveYen || 0,
-        OneYen: data.TotalOneYen || 0,
-    });
+    const mapCashStateKeys = (data) => {
+        if (data && data.denominations && data.denominations[0]) {
+            const denom = data.denominations[0];
+            return {
+                TenThousandYen: denom.TotalTenThousandYen || 0,
+                FiveThousandYen: denom.TotalFiveThousandYen || 0,
+                OneThousandYen: denom.TotalOneThousandYen || 0,
+                FiveHundredYen: denom.TotalFiveHundredYen || 0,
+                OneHundredYen: denom.TotalOneHundredYen || 0,
+                FiftyYen: denom.TotalFiftyYen || 0,
+                TenYen: denom.TotalTenYen || 0,
+                FiveYen: denom.TotalFiveYen || 0,
+                OneYen: denom.TotalOneYen || 0,
+            };
+        }
+        return {};  // データがない場合は空のオブジェクトを返す
+    };
+    
 
     // ✅ 金庫の現在状態を取得
     const fetchCashState = useCallback(async () => {
         try {
             const data = await getCurrentInventory();
-            setCashState(mapCashStateKeys(data));  // 🔹 変換後のデータをセット
+            console.log("Received data:", data);  // ここでレスポンスデータを確認
+            setCashState(mapCashStateKeys(data));
         } catch (error) {
             console.error("❌ 金庫状態取得エラー:", error);
             setError("金庫状態の取得に失敗しました。");
         }
     }, []);
+    
+    
 
     useEffect(() => {
         fetchCashState();
-    }, [fetchCashState]);  
+    }, [fetchCashState]);  // 依存関係を確認（`fetchCashState` は変更されないので、ここで問題なし）
+ 
 
     // ✅ 現在の金額を計算（金種 × 現在枚数）
     const calculateTotalAmount = () => {

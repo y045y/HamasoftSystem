@@ -27,41 +27,57 @@ const styles = StyleSheet.create({
     width: '100%',
     borderStyle: 'solid',
     borderWidth: 1,
+    borderColor: '#000',
     marginTop: 10,
   },
   tableRow: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#000',
-    borderRightWidth: 1,
-    borderRightColor: '#000',
-    height: 30,
+    height: 30, // 行の高さを固定
     alignItems: 'center',
+    justifyContent: 'center', // セル内で中央揃え
   },
   tableCellLeft: {
-    padding: 4,
+    padding: 6,
     fontSize: 10,
     textAlign: 'left',
     borderRightWidth: 1,
     borderRightColor: '#000',
+    borderBottomWidth: 1,
+    borderBottomColor: '#000',
+    width: 80, // セルの幅を固定
+    height: 30, // セルの高さを固定
+    display: 'flex',
+    justifyContent: 'center', // セル内で中央揃え
   },
   tableCellRight: {
-    padding: 4,
+    padding: 6,
     fontSize: 10,
     textAlign: 'right',
     borderRightWidth: 1,
     borderRightColor: '#000',
+    borderBottomWidth: 1,
+    borderBottomColor: '#000',
+    width: 80, // セルの幅を固定
+    height: 30, // セルの高さを固定
+    display: 'flex',
+    justifyContent: 'center', // セル内で中央揃え
   },
-  dateCell: { width: 50 },
-  depositCell: { width: 50 },
-  withdrawalCell: { width: 50 },
+  
+  
+  dateCell: { width: 60 },
+  depositCell: { width: 60 },
+  withdrawalCell: { width: 60 },
   balanceCell: { width: 70 },
   recipientCell: { width: 100 },
-  summaryCell: { width: 110 },
-  memoCell: { width: 130 },
-  currencyCell: { width: 30 },
+  summaryCell: { width: 120 },
+  memoCell: { width: 150 },
+  currencyCell: { width: 40 },
 });
 
+
+
+
+// 行を整形する関数
 const splitIntoPages = (data, itemsPerPage = 14) => {
   const pages = [];
   for (let i = 0; i < data.length; i += itemsPerPage) {
@@ -104,7 +120,7 @@ const CashManagementPDF = ({ history = [], previousCarryOver = {}, currentMonth 
               <Text style={[styles.tableCellRight, styles.currencyCell]}>5</Text>
               <Text style={[styles.tableCellRight, styles.currencyCell]}>1</Text>
             </View>
-  
+
             {/* ✅ 1ページ目だけ繰越金を表示 */}
             {pageNumber === 0 && (
               <View style={styles.tableRow}>
@@ -126,7 +142,7 @@ const CashManagementPDF = ({ history = [], previousCarryOver = {}, currentMonth 
                 <Text style={[styles.tableCellRight, styles.currencyCell]}>{previousCarryOver.OneYen || 0}</Text>
               </View>
             )}
-  
+
             {pageHistory.map((item, index) => (
               <View key={index} style={styles.tableRow}>
                 <Text style={[styles.tableCellLeft, styles.dateCell]}>{formatDate(item.TransactionDate)}</Text>
@@ -156,8 +172,6 @@ const CashManagementPDF = ({ history = [], previousCarryOver = {}, currentMonth 
       ))}
     </Document>
   );
-  
-  
 };
 
 export default CashManagementPDF;

@@ -7,9 +7,29 @@ const API_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api
 console.log("API URL:", API_URL);
 
 // 1. 取引履歴を取得
-export const getTransactionHistory = async (startDate, endDate) => {
+
+export const getTransactionHistory = async (currentMonth) => {
     try {
-        const response = await axios.get(`${API_URL}/transaction-history?startDate=${startDate}&endDate=${endDate}`);
+        // currentMonthが無効な場合や形式が不正なら、現在の年月を使用
+        if (!currentMonth || !/^\d{4}-\d{2}$/.test(currentMonth)) {
+            console.error("無効な日付形式です。YYYY-MMの形式で入力してください。");
+            currentMonth = new Date().toISOString().slice(0, 7); // 現在の年月をデフォルトに設定
+        }
+
+        // 開始日を計算
+        const startDate = new Date(`${currentMonth}-01`).toISOString().slice(0, 10);  // 月の初日
+
+        // 終了日を計算：次月の1日から1日引いて前月の最終日を取得
+        const endDate = new Date(currentMonth);  // currentMonthを基に日付を作成
+        endDate.setMonth(endDate.getMonth() + 1);  // 次月の1日
+        endDate.setDate(0);  // 次月の最終日に設定
+
+        const formattedEndDate = endDate.toISOString().slice(0, 10);  // YYYY-MM-DD形式に変換
+
+        console.log(`開始日: ${startDate}, 終了日: ${formattedEndDate}`);  // デバッグ用
+
+        // 取得するAPIのURLにstartDateとendDateを渡す
+        const response = await axios.get(`${API_URL}/transaction-history?startDate=${startDate}&endDate=${formattedEndDate}`);
         return response.data.transactions || [];
     } catch (error) {
         console.error("❌ 取引履歴取得エラー:", error);
@@ -17,16 +37,21 @@ export const getTransactionHistory = async (startDate, endDate) => {
     }
 };
 
+
+
+
 // 2. 現在の金庫状態を取得
 export const getCurrentInventory = async () => {
     try {
-        const response = await axios.get(`${API_URL}/current-inventory`, { timeout: 10000 });
-        return response.data || {};
+        // 正しいエンドポイントを使用: /denominations
+        const response = await axios.get(`${API_URL}/denominations`, { timeout: 10000 });
+        return response.data || {};  // データがない場合は空のオブジェクトを返す
     } catch (error) {
         console.error("❌ 金庫状態取得エラー:", error);
-        throw error;
+        throw error;  // エラーが発生した場合は再度スローして呼び出し元でエラーハンドリング
     }
 };
+
 
 // 3. 取引の挿入
 export const insertTransaction = async (data) => {

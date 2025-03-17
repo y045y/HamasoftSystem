@@ -1,22 +1,16 @@
 import React, { useState, useEffect, useCallback } from "react";
 import CashStateTable from "./CashStateTable";
 import TransactionHistory from "./TransactionHistory";
-import { getTransactionHistory, getCurrentInventory, insertTransaction, exportToCSV } from "../services/api";
+import { getTransactionHistory, getCurrentInventory, insertTransaction } from "../services/api";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../styles/cashManagementForm.css";
-import axios from "axios";  // ⭐️ axiosをインポート
-
-const API_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
-console.log("API URL:", API_URL);
 
 const CashManagementFormUI = () => {
-    const [difference, setDifference] = useState(0); 
+    const [difference, setDifference] = useState(0);
     const [loading, setLoading] = useState(false);
     const [transactions, setTransactions] = useState([]);
     const [inputCounts, setInputCounts] = useState({});
     const [cashState, setCashState] = useState({});
-    const [error, setError] = useState(null);  // エラー表示用
-
     const [form, setForm] = useState({
         date: "",
         amount: 0,
@@ -26,64 +20,50 @@ const CashManagementFormUI = () => {
         memo: "",
     });
 
+    // `currentMonth`の状態を管理
+    const [currentMonth, setCurrentMonth] = useState(new Date().toISOString().slice(0, 7));  // 初期値は現在の年月
 
-    const API_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000/api";
-    console.log("API URL:", API_URL);
-    
+    // 取引履歴を取得
     const fetchTransactions = useCallback(async () => {
         try {
-            const startDate = new Date();
-            startDate.setMonth(startDate.getMonth() - 1);
-            startDate.setDate(1);
-            const endDate = new Date().toISOString().slice(0, 10);
-    
-            const apiUrl = `${API_URL}/transaction-history?startDate=${startDate.toISOString().slice(0, 10)}&endDate=${endDate}`;
-            console.log("APIリクエスト送信:", apiUrl);
-    
-            // ⭐️ fetchをaxiosに変更
-            const response = await axios.get(apiUrl);
-            const data = response.data;  // axiosは自動でJSON変換するので `.data` で取得
-            console.log("APIから取得したデータ:", data);
-    
+            const startDate = new Date(`${currentMonth}-01`);  // currentMonthの初日を取得
+            const startMonth = startDate.toISOString().slice(0, 7);  // YYYY-MM形式
+
+            const data = await getTransactionHistory(startMonth);
+
             if (Array.isArray(data) && data.length > 0) {
-                if (JSON.stringify(data) !== JSON.stringify(transactions)) {
-                    setTransactions(data);
-                    console.log("🔄 取引履歴を更新:", data);
-                } else {
-                    console.log("⚠️ データに変更なし");
-                }
+                setTransactions(data);
             } else {
-                console.log("⚠️ 取引履歴が空です");
                 setTransactions([]);
             }
         } catch (error) {
             console.error("❌ 取引履歴取得エラー:", error);
             setTransactions([]);
         }
-    }, []);
-    
-    
+    }, [currentMonth]);
+
+    // 金庫状態を取得する関数
     const fetchCashState = useCallback(async () => {
         try {
-            const response = await axios.get(`${API_URL}/cash-state`);  // ⭐️ axiosに変更
-            const data = response.data;  // axiosは `.data` で取得
-            console.log("💡 金庫の状態:", data);
+            const data = await getCurrentInventory();
             setCashState(data);
         } catch (error) {
             console.error("❌ 金庫状態取得エラー:", error);
-            setError("金庫状態の取得に失敗しました。サーバーを確認してください。");
             setCashState({});
         }
     }, []);
-    
 
-    // ✅ 初回レンダリングのみ実行 (メモ化した関数を依存配列に)
+    // コンポーネントがマウントされた後に金庫状態を取得
+    useEffect(() => {
+        fetchCashState();
+    }, [fetchCashState]);
+
+    // 月が変更されたら取引履歴を再取得
     useEffect(() => {
         fetchTransactions();
-        fetchCashState();
-    }, [fetchTransactions, fetchCashState]);
+    }, [fetchTransactions]);
 
-    // 🔄 取引送信
+    // 取引送信処理
     const handleSubmit = async () => {
         const transactionAmount = isNaN(difference) ? 0 : 
             (form.transactionType === "出金" ? -Math.abs(difference) : Math.abs(difference));
@@ -102,6 +82,15 @@ const CashManagementFormUI = () => {
             Summary: form.summary,
             Memo: form.memo,
             Recipient: form.recipient,
+            TenThousandYen: form.tenThousandYen || 0,
+            FiveThousandYen: form.fiveThousandYen || 0,
+            OneThousandYen: form.oneThousandYen || 0,
+            FiveHundredYen: form.fiveHundredYen || 0,
+            OneHundredYen: form.oneHundredYen || 0,
+            FiftyYen: form.fiftyYen || 0,
+            TenYen: form.tenYen || 0,
+            FiveYen: form.fiveYen || 0,
+            OneYen: form.oneYen || 0,
             ...inputCounts
         };
 
@@ -109,9 +98,8 @@ const CashManagementFormUI = () => {
             setLoading(true);
             await insertTransaction(data);
             await fetchTransactions();
-console.log("✅ 最新の取引履歴を取得しました");
-
             await fetchCashState();
+
             setForm({
                 date: "",
                 amount: 0,
@@ -119,6 +107,15 @@ console.log("✅ 最新の取引履歴を取得しました");
                 summary: "交通費",
                 recipient: "なし",
                 memo: "",
+                tenThousandYen: 0,
+                fiveThousandYen: 0,
+                oneThousandYen: 0,
+                fiveHundredYen: 0,
+                oneHundredYen: 0,
+                fiftyYen: 0,
+                tenYen: 0,
+                fiveYen: 0,
+                oneYen: 0
             });
             setInputCounts({});
         } catch (error) {
@@ -128,17 +125,6 @@ console.log("✅ 最新の取引履歴を取得しました");
         }
     };
 
-    const handleExport = async () => {
-        try {
-            const csvData = await exportToCSV();
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(new Blob([csvData]));
-            link.download = "transactions.csv";
-            link.click();
-        } catch (error) {
-            console.error("❌ CSVエクスポートエラー:", error);
-        }
-    };
 
     return (
         <div className="container mt-4 p-3 bg-light rounded shadow-sm">
@@ -198,13 +184,14 @@ console.log("✅ 最新の取引履歴を取得しました");
                 </div>
             </form>
 
-           <CashStateTable 
+            <CashStateTable 
                 inputCounts={inputCounts} 
                 cashState={cashState} 
                 fetchCashState={fetchCashState} 
                 setInputCounts={setInputCounts} 
                 setDifference={setDifference} 
             />
+
             <div className="text-end mt-3">
                 <button className="btn btn-primary px-4" onClick={handleSubmit} disabled={loading}>
                     {loading ? "処理中..." : "保存"}
@@ -212,8 +199,15 @@ console.log("✅ 最新の取引履歴を取得しました");
             </div>
 
             <div className="mt-4">
-                <TransactionHistory transactions={transactions} fetchTransactions={fetchTransactions} fetchCashState={fetchCashState} />
-            </div>
+            <TransactionHistory
+                transactions={transactions}
+                fetchTransactions={fetchTransactions}
+                fetchCashState={fetchCashState}
+                currentMonth={currentMonth}
+                setCurrentMonth={setCurrentMonth}  // Pass setCurrentMonth to TransactionHistory
+                />
+
+</div>
         </div>
     );
 };
