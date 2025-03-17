@@ -1,7 +1,5 @@
-// server/models/transactionModel.js
-
 const { DataTypes } = require("sequelize");
-const { sequelize } = require("../config/db");  // ⭐️ ここを修正 (分割代入でインポート)
+const { sequelize } = require("../config/db");
 
 const Transaction = sequelize.define("Transaction", {
     Id: {
@@ -11,10 +9,10 @@ const Transaction = sequelize.define("Transaction", {
     },
     TransactionDate: {
         type: DataTypes.DATE,
-        allowNull: true,
+        allowNull: false,
     },
     TransactionType: {
-        type: DataTypes.STRING,
+        type: DataTypes.STRING(50),
         allowNull: true,
     },
     Amount: {
@@ -36,11 +34,11 @@ const Transaction = sequelize.define("Transaction", {
     RunningBalance: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        defaultValue: 0,
+        // defaultValue: 0,  // defaultValueを設定
     },
 }, {
     tableName: "Transactions",
     timestamps: false,
 });
 
-module.exports = Transaction;
+module.exports = { Transaction };

@@ -1,4 +1,4 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
 const { 
     getTransactionHistory, 
@@ -8,7 +8,7 @@ const {
     importCSVFile, 
     exportToCSV, 
     exportToDenominationsCSV 
-} = require("../controllers/transactionController");
+} = require("../controllers/transactionController");  // Using require instead of import
 
 // 取引履歴を取得するルート
 router.get("/transaction-history", getTransactionHistory);
@@ -31,4 +31,5 @@ router.get("/export-transactions", exportToCSV);
 // 金庫の状態をCSVでエクスポートするルート
 router.get("/export-denominations", exportToDenominationsCSV);
 
-module.exports = router;
+// Exporting the router module
+module.exports = router;  // Using module.exports to export the router
